@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CX Business Case Builder | OG&E</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #001E38;
+    --red: #D6291A;
+    --red2: #EF4638;
+    --smoke: #F7F6F5;
+    --cream: #F0EDE8;
+    --mid: #8A9BAD;
+    --border: rgba(0,30,56,0.12);
+    --font: Calibri, Carlito, sans-serif;
+  }
+  body { font-family: var(--font); background: var(--smoke); color: var(--navy); min-height: 100vh; overflow-x: hidden; font-size: 14px; }
+
+  .header {
+    background: var(--navy);
+    padding: 0 32px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; flex-direction: column; justify-content: center; }
+  .header-title { color: white; font-size: 17px; font-weight: 700; line-height: 1.2; }
+  .header-sub { color: var(--mid); font-size: 10px; letter-spacing: 1.8px; text-transform: uppercase; margin-top: 2px; }
+  .version-tag { font-size: 10px; color: var(--mid); background: rgba(255,255,255,0.06); padding: 4px 9px; border-radius: 3px; letter-spacing: 0.5px; font-family: monospace; white-space: nowrap; }
+
+  .main { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 58px); }
+
+  .left-panel { background: white; border-right: 1px solid var(--border); padding: 22px 18px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+  .section-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--mid); margin-bottom: 7px; font-family: monospace; }
+  .panel-divider { height: 1px; background: var(--border); flex-shrink: 0; }
+  .hint { font-size: 11px; color: var(--mid); line-height: 1.5; margin-top: 5px; }
+
+  .journey-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .journey-btn { background: var(--smoke); border: 1.5px solid transparent; border-radius: 8px; padding: 10px 9px; cursor: pointer; text-align: left; transition: all 0.15s; width: 100%; }
+  .journey-btn:hover { border-color: var(--mid); background: var(--cream); }
+  .journey-btn.active { background: var(--navy); border-color: var(--navy); }
+  .journey-btn.active .j-name { color: white; }
+  .journey-btn.active .j-code { color: var(--mid); }
+  .j-icon { font-size: 15px; margin-bottom: 4px; display: block; }
+  .j-name { font-size: 11px; font-weight: 700; color: var(--navy); line-height: 1.3; display: block; }
+  .j-code { font-size: 9px; color: var(--mid); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; display: block; font-family: monospace; }
+
+  .data-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .data-pill { background: var(--smoke); border: 1px solid var(--border); border-radius: 20px; padding: 3px 9px; font-size: 11px; color: var(--navy); }
+  .data-pill.hi { background: rgba(214,41,26,0.07); border-color: rgba(214,41,26,0.22); color: var(--red); font-weight: 700; }
+
+  .signal-input { width: 100%; min-height: 96px; border: 1.5px solid var(--border); border-radius: 8px; padding: 10px 12px; font-family: var(--font); font-size: 13px; color: var(--navy); background: var(--smoke); resize: vertical; outline: none; transition: border-color 0.2s; line-height: 1.6; }
+  .signal-input:focus { border-color: var(--navy); background: white; }
+  .signal-input::placeholder { color: var(--mid); font-style: italic; }
+
+  .audience-row { display: flex; gap: 6px; }
+  .audience-btn { flex: 1; padding: 8px 4px; border: 1.5px solid var(--border); border-radius: 6px; background: var(--smoke); font-size: 12px; font-weight: 700; color: var(--mid); cursor: pointer; text-align: center; transition: all 0.15s; font-family: var(--font); }
+  .audience-btn:hover { border-color: var(--navy); color: var(--navy); }
+  .audience-btn.active { background: var(--navy); border-color: var(--navy); color: white; }
+
+  .generate-btn { width: 100%; padding: 13px; background: var(--red); color: white; border: none; border-radius: 8px; font-family: var(--font); font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: auto; flex-shrink: 0; }
+  .generate-btn:hover:not(:disabled) { background: var(--red2); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(214,41,26,0.28); }
+  .generate-btn:disabled { background: var(--mid); cursor: not-allowed; }
+  .btn-spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  .generate-btn.loading .btn-spinner { display: block; }
+  .generate-btn.loading .btn-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .right-panel { padding: 26px 34px; display: flex; flex-direction: column; overflow-y: auto; }
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; }
+  .empty-icon { font-size: 40px; opacity: 0.18; }
+  .empty-title { font-size: 21px; font-weight: 700; color: var(--navy); opacity: 0.16; }
+  .empty-sub { font-size: 13px; color: var(--mid); max-width: 270px; line-height: 1.6; }
+
+  .output-area { display: none; flex-direction: column; flex: 1; }
+  .output-area.visible { display: flex; }
+
+  .output-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .output-meta { display: flex; gap: 7px; align-items: center; }
+  .tag-journey { background: var(--navy); color: white; font-size: 10px; letter-spacing: 1.5px; padding: 4px 9px; border-radius: 3px; text-transform: uppercase; font-family: monospace; }
+  .tag-audience { background: var(--smoke); color: var(--mid); font-size: 10px; letter-spacing: 1px; padding: 4px 9px; border-radius: 3px; text-transform: uppercase; border: 1px solid var(--border); font-family: monospace; }
+  .output-actions { display: flex; gap: 7px; }
+  .action-btn { padding: 6px 13px; border: 1.5px solid var(--border); border-radius: 6px; background: white; font-size: 12px; font-weight: 700; color: var(--navy); cursor: pointer; transition: all 0.15s; font-family: var(--font); }
+  .action-btn:hover { border-color: var(--navy); }
+
+  .output-doc { background: white; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; flex: 1; display: flex; flex-direction: column; }
+  .doc-header { background: var(--navy); padding: 18px 26px; }
+  .doc-kicker { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--mid); margin-bottom: 4px; font-family: monospace; }
+  .doc-title { font-size: 19px; font-weight: 700; color: white; line-height: 1.3; }
+  .doc-body { padding: 24px 26px; overflow-y: auto; flex: 1; font-size: 13.5px; line-height: 1.75; }
+  .doc-body h2 { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--red); margin: 22px 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); font-family: monospace; }
+  .doc-body h2:first-child { margin-top: 0; }
+  .doc-body p { margin-bottom: 8px; }
+  .doc-body ul { padding-left: 18px; margin-bottom: 8px; }
+  .doc-body li { margin-bottom: 4px; }
+  .doc-body strong { font-weight: 700; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .cursor { display: inline-block; width: 2px; height: 14px; background: var(--red); margin-left: 2px; vertical-align: middle; animation: blink 0.8s step-end infinite; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-title">CX Business Case Builder</div>
+    <div class="header-sub">Customer Journey Management</div>
+  </div>
+  <div class="version-tag">v1.0 &nbsp;|&nbsp; BPMTS / OUT / SST / P&S</div>
+</div>
+
+<div class="main">
+  <div class="left-panel">
+
+    <div>
+      <div class="section-label">01 | Journey</div>
+      <div class="journey-grid">
+        <button class="journey-btn active" data-journey="bp" onclick="selectJourney(this)">
+          <span class="j-icon">💳</span>
+          <span class="j-name">Billing & Payments</span>
+          <span class="j-code">BPMTS</span>
+        </button>
+        <button class="journey-btn" data-journey="out" onclick="selectJourney(this)">
+          <span class="j-icon">⚡</span>
+          <span class="j-name">Outages</span>
+          <span class="j-code">OUT</span>
+        </button>
+        <button class="journey-btn" data-journey="sst" onclick="selectJourney(this)">
+          <span class="j-icon">🔄</span>
+          <span class="j-name">Start Stop Transfer</span>
+          <span class="j-code">SST</span>
+        </button>
+        <button class="journey-btn" data-journey="ps" onclick="selectJourney(this)">
+          <span class="j-icon">⭐</span>
+          <span class="j-name">Programs & Services</span>
+          <span class="j-code">P&S</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <div>
+      <div class="section-label">02 | Relevant Data Sources</div>
+      <div class="data-pills" id="dataPills"></div>
+      <p class="hint" style="margin-top:8px;">These sources anchor the business case for this journey.</p>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <div>
+      <div class="section-label">03 | Signal or Pain Point</div>
+      <textarea class="signal-input" id="signalInput" placeholder="Paste your signal here. Raw data, a Qualtrics theme, a call volume spike, an Escalent dimension — whatever you're working from."></textarea>
+      <p class="hint">Example: AutoPay failure rate trending up. Payment call volume is top driver. Escalent B&P score declined 7 pts.</p>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <div>
+      <div class="section-label">04 | Primary Audience</div>
+      <div class="audience-row">
+        <button class="audience-btn active" data-audience="KB" onclick="selectAudience(this)">KB</button>
+        <button class="audience-btn" data-audience="JW" onclick="selectAudience(this)">JW</button>
+        <button class="audience-btn" data-audience="TDS" onclick="selectAudience(this)">TDS / JC</button>
+      </div>
+    </div>
+
+    <button class="generate-btn" id="generateBtn" onclick="generateCase()">
+      <div class="btn-spinner"></div>
+      <span class="btn-text">Generate Business Case</span>
+    </button>
+
+  </div>
+
+  <div class="right-panel">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📄</div>
+      <div class="empty-title">Nothing generated yet.</div>
+      <div class="empty-sub">Select a journey, describe your signal, and hit Generate.</div>
+    </div>
+
+    <div class="output-area" id="outputArea">
+      <div class="output-toolbar">
+        <div class="output-meta">
+          <div class="tag-journey" id="outJourneyTag">BPMTS</div>
+          <div class="tag-audience" id="outAudienceTag">KB</div>
+        </div>
+        <div class="output-actions">
+          <button class="action-btn" onclick="copyOutput()">Copy Text</button>
+          <button class="action-btn" onclick="resetOutput()">New Case</button>
+        </div>
+      </div>
+      <div class="output-doc">
+        <div class="doc-header">
+          <div class="doc-kicker" id="docKicker">Business Case | Billing & Payments</div>
+          <div class="doc-title" id="docTitle">Generating...</div>
+        </div>
+        <div class="doc-body" id="docBody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const JOURNEY_DATA = {
+  bp: {
+    label: 'Billing & Payments', code: 'BPMTS',
+    pills: ['Escalent B&P Score','Qualtrics Payment Ease','Bidgely NBI','AutoPay data','TDS call volume','myOGEalerts opt-out','KUBRA migration'],
+    hi: ['Escalent B&P Score','AutoPay data'],
+    context: `Journey: Billing & Payments (BPMTS). CJM owner: Uli Serrano.
+Data sources: Escalent Cogent Readout (B&P score ~740, up ~7 pts YoY, directional only), Qualtrics Payment Ease Score (3.8), Bidgely widget engagement (NBI email, Bill Analysis, Rate Comparison, Tips Library), AutoPay failure rate and enrollment from TDS, myOGEalerts opt-out rate, contact volume by reason code from Customer Ops, KUBRA migration context.
+Active BCs: BC1 AutoPay & Payment Confirmation, BC2 Proactive Bill Alerts, BC3 Bidgely Placement. ECR rank: 22 of 26 Electric South.
+Pain points: AutoPay silent failures, payment confirmation gaps, bill comprehension, bill anticipation, digital payment ease decline, NBI routing misalignment, high bill anxiety, Oklahoma summer bill volatility.`
+  },
+  out: {
+    label: 'Outages', code: 'OUT',
+    pills: ['CAIDI / SAIDI','Outage notifications','Est. restoration time','Qualtrics Outage sat.','Storm comms','OMS data','Social listening'],
+    hi: ['Outage notifications','Est. restoration time'],
+    context: `Journey: Outages. CJM owner: Erin.
+Data sources: CAIDI/SAIDI reliability metrics, Qualtrics outage satisfaction, outage notification delivery rates (SMS/email/push), estimated restoration time accuracy, OMS data, contact volume spikes during storms, social media sentiment.
+Pain points: ERT accuracy gaps, proactive notification failures, customers calling to report already-known outages, post-restoration follow-up gaps, storm communication clarity, mobile app outage map usability, vulnerable customer outage prioritization.`
+  },
+  sst: {
+    label: 'Start Stop Transfer', code: 'SST',
+    pills: ['Service order completion','Digital self-service rate','SST contact volume','Qualtrics SST sat.','Deposit friction','Identity verification','Move-in/out timing'],
+    hi: ['Digital self-service rate','SST contact volume'],
+    context: `Journey: Start / Stop / Transfer (SST).
+Data sources: Service order completion rate, digital self-service completion rate vs. phone, SST inbound contact volume by reason code, Qualtrics SST satisfaction, deposit friction data, identity verification drop-off, time-to-connect and time-to-disconnect SLA data.
+Pain points: deposit friction for new customers, identity verification barriers, digital SST abandonment, unclear service start confirmation, move-in scheduling gaps, landlord/tenant coordination friction, same-day connect handling.`
+  },
+  ps: {
+    label: 'Programs & Services', code: 'P&S',
+    pills: ['SmartHours enrollment','GFB / AMB adoption','Silver Energy Discount','Bidgely rate comparison','Option to Connect','Energy Insights engagement','Low-income uptake'],
+    hi: ['SmartHours enrollment','GFB / AMB adoption'],
+    context: `Journey: Programs & Services. CJM owner: Erin.
+Data sources: SmartHours enrollment rate, GFB and AMB enrollment and retention, Silver Energy Discount uptake among eligible customers, Bidgely Rate Comparison widget engagement, Energy Insights adoption, Option to Connect demand response (not yet launched), low-income and vulnerable customer program awareness.
+Pain points: program awareness gaps, enrollment friction, GFB eligibility confusion, AMB misunderstanding vs. actual bill, SmartHours behavior change barriers, Silver Energy Discount unawareness among eligible seniors, Option to Connect strategy undefined.`
+  }
+};
+
+const AUDIENCE_CONTEXT = {
+  KB: `Audience: KB (Director). Opportunity-rich framing only, never "problem" language. Concise, punchy. Prioritizes speed to execute. Wants a clear ask and path. Approval authority before routing to TDS/JC.`,
+  JW: `Audience: JW (CEO). Frame entirely around results. Where results will come from, not what the opportunity is. Skip setup. Lead with outcome.`,
+  TDS: `Audience: TDS team / JC. Technical framing. Clear owners, timelines, scope. Phase 1 vs Phase 2 separation critical. Skip business case preamble, go straight to the action plan.`
+};
+
+let journey = 'bp', audience = 'KB';
+
+function selectJourney(btn) {
+  document.querySelectorAll('.journey-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  journey = btn.dataset.journey;
+  renderPills();
+}
+function selectAudience(btn) {
+  document.querySelectorAll('.audience-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  audience = btn.dataset.audience;
+}
+function renderPills() {
+  const d = JOURNEY_DATA[journey];
+  document.getElementById('dataPills').innerHTML = d.pills.map(p =>
+    `<span class="data-pill${d.hi.includes(p) ? ' hi' : ''}">${p}</span>`).join('');
+}
+function resetOutput() {
+  document.getElementById('outputArea').classList.remove('visible');
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('signalInput').value = '';
+}
+function copyOutput() {
+  const title = document.getElementById('docTitle').textContent;
+  const body = document.getElementById('docBody').innerText;
+  navigator.clipboard.writeText(title + '\n\n' + body).then(() => {
+    const b = event.target; b.textContent = 'Copied!';
+    setTimeout(() => b.textContent = 'Copy Text', 1600);
+  });
+}
+
+async function generateCase() {
+  const signal = document.getElementById('signalInput').value.trim();
+  if (!signal) {
+    const ta = document.getElementById('signalInput');
+    ta.style.borderColor = 'var(--red)';
+    setTimeout(() => ta.style.borderColor = '', 1500);
+    return;
+  }
+  const jd = JOURNEY_DATA[journey];
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('outputArea').classList.add('visible');
+  document.getElementById('outJourneyTag').textContent = jd.code;
+  document.getElementById('outAudienceTag').textContent = audience;
+  document.getElementById('docKicker').textContent = `Business Case | ${jd.label}`;
+  document.getElementById('docTitle').textContent = 'Drafting...';
+  document.getElementById('docBody').innerHTML = '<span class="cursor"></span>';
+
+  const sys = `You are Uli Serrano, Customer Journey Manager at OG&E (Oklahoma Gas and Electric), a regulated electric utility in Oklahoma and Arkansas.
+
+Writing rules — non-negotiable:
+- No em dashes anywhere. Use commas or periods.
+- No AI-sounding constructions or "not X but Y" contrasts.
+- Write like a person talking in a room, not a consultant.
+- Always opportunity-rich framing. Never say "problem." Say "opportunity" or "gap we can close."
+- Phase 1 and Phase 2 always clearly separated. Phase 2 never presented as Phase 1.
+- All statistics must trace to a named source. If unconfirmed, say "pending TDS pull."
+
+${jd.context}
+${AUDIENCE_CONTEXT[audience]}
+
+Output format — use these exact H2 headers in this order. Start immediately with the first section, no title line above it:
+## One-Line Case
+## What We're Seeing
+## The Opportunity
+## Phase 1 | Fast Actions
+## Phase 2 | Structural
+## Success Metrics
+## Risks + Mitigations
+## Ask`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        system: sys,
+        messages: [{ role: 'user', content: `Journey: ${jd.label}\nAudience: ${audience}\nSignal: ${signal}\n\nDraft the business case now.` }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`HTTP ${res.status}: ${err}`);
+    }
+
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+    if (!text) throw new Error('Empty response');
+
+    const match = text.match(/##\s*One-Line Case\s*\n([^\n]+)/);
+    document.getElementById('docTitle').textContent = match ? match[1].trim() : `${jd.label} | Business Case`;
+    document.getElementById('docBody').innerHTML = renderMD(text);
+  } catch(e) {
+    document.getElementById('docTitle').textContent = 'Generation failed';
+    document.getElementById('docBody').innerHTML = `<p style="color:var(--red)">Something went wrong: ${e.message}. Try again.</p>`;
+  }
+
+  btn.disabled = false;
+  btn.classList.remove('loading');
+}
+
+function renderMD(md) {
+  let h = md;
+  h = h.replace(/## (.+)/g, '<h2>$1</h2>');
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/((?:^|\n)- .+)+/g, m => {
+    const items = m.trim().split('\n').map(l => `<li>${l.replace(/^- /, '')}</li>`).join('');
+    return `<ul>${items}</ul>`;
+  });
+  h = h.split('\n\n').map(b => b.trim().startsWith('<') ? b : `<p>${b.trim()}</p>`).join('\n');
+  return h;
+}
+
+renderPills();
+</script>
+</body>
+</html>
