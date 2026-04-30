@@ -15,10 +15,10 @@ You pick a journey, paste a signal or pain point, select your audience, and hit 
 
 | Journey | Code | CJM |
 |---|---|---|
-| Billing & Payments | BPMTS | Uli |
-| Outages | OUT | Erin |
+| Billing & Payments | BPMTS | U |
+| Outages | OUT | E |
 | Start Stop Transfer | SST | — |
-| Programs & Services | P&S | Erin |
+| Programs & Services | P&S | E |
 
 Each journey pre-loads its own data sources and pain point vocabulary into the AI prompt.
 
